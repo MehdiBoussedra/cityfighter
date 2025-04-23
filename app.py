@@ -1,44 +1,273 @@
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+import requests
 
-# === Données (à charger avec tes fichiers préparés) ===
-df_pop = pd.read_excel("Villes_regroupees_population.xlsx")
-df_emploi = pd.read_excel("emploi_variables_utiles.xlsx")
-df_logement = pd.read_excel("logement_variables_utiles.xlsx")
+# === Configuration Streamlit ===
+st.set_page_config(page_title="City Fighting", layout="wide")
 
-# Fusion (sur 'ville_regroupee' ou 'codgeo' selon structure)
-df = df_pop.merge(df_emploi, on="codgeo", how="left")
-df = df.merge(df_logement, on="codgeo", how="left")
+# === Barre de navigation ===
+st.sidebar.title("🔍 Navigation")
+page = st.sidebar.radio("Aller à :", [
+    "🏠 Accueil",
+    "🏙️ Comparaison de villes",
+    "🗺️ Carte interactive",
+    "🌤️ Météo",
+    "🏃 Offre sportive",
+    "ℹ️ À propos"
+])
 
-# === Interface utilisateur ===
-st.title("🏙️ City Fighting - Comparaison de Villes")
+# === Chargement des données ===
+df_pop = pd.read_excel("Villes_regroupees_population_wiki_sport.xlsx")
+df_emploi = pd.read_excel("emploi_variables_utiles_grouped.xlsx")
+df_logement = pd.read_excel("logement_variables_utiles_grouped.xlsx")
 
-# Sélection des villes
-villes = df["ville_regroupee"].unique()
-ville1 = st.selectbox("Sélectionner la première ville", villes)
-ville2 = st.selectbox("Sélectionner la deuxième ville", villes)
+df = df_pop.merge(df_emploi, on="ville_regroupee", how="left")
+df = df.merge(df_logement, on="ville_regroupee", how="left")
 
-# Extraire les données
+# === Sélection de villes ===
+villes = sorted(df["ville_regroupee"].unique())
+ville1 = st.sidebar.selectbox("📍 Ville 1", villes, index=villes.index("Paris") if "Paris" in villes else 0)
+ville2 = st.sidebar.selectbox("📍 Ville 2", villes, index=villes.index("Marseille") if "Marseille" in villes else 1)
+
+if ville1 == ville2:
+    st.warning("⚠️ Veuillez sélectionner deux villes différentes.")
+    st.stop()
+
 data1 = df[df["ville_regroupee"] == ville1].iloc[0]
 data2 = df[df["ville_regroupee"] == ville2].iloc[0]
 
-# === Affichage ===
-st.subheader(f"📊 Comparaison entre {ville1} et {ville2}")
+# === PAGE : ACCEUIL ===
+if page == "🏠 Accueil":
+    st.title("🏙️ Bienvenue sur City Fighting")
+    st.markdown("""
+        **City Fighting** est une application de comparaison entre les grandes villes françaises (plus de 20 000 habitants).  
+        Elle vous permet de :
+        - Comparer deux villes selon leur population, emploi, logement, équipements sportifs.
+        - Visualiser ces villes sur une carte interactive.
+        - Accéder à la météo en temps réel et aux prévisions.
 
-col1, col2 = st.columns(2)
+        👉 Sélectionnez une rubrique dans le menu de gauche pour commencer.
+    """)
 
-with col1:
-    st.markdown(f"### {ville1}")
-    st.write(f"Population 2021 : {int(data1['p21_pop'])}")
-    st.write(f"Total emplois : {int(data1['total_emplois'])}")
-    st.write(f"Chômeurs : {int(data1['total_chomeurs'])}")
-    st.write(f"Logements : {int(data1['P20_LOG'])}")
-    
+# === PAGE : COMPARAISON ===
+if page == "🏙️ Comparaison de villes":
+    st.title("🏙️ Comparaison de Villes")
+    st.subheader(f"📊 {ville1} vs {ville2} - Données générales (2021)")
 
-with col2:
-    st.markdown(f"### {ville2}")
-    st.write(f"Population 2021 : {int(data2['p21_pop'])}")
-    st.write(f"Total emplois : {int(data2['total_emplois'])}")
-    st.write(f"Chômeurs : {int(data2['total_chomeurs'])}")
-    st.write(f"Logements : {int(data2['P20_LOG'])}")
+    indicateurs = ["Population", "Emplois", "Chômeurs", "Logements"]
+    val1 = [int(data1["p21_pop"]), int(data1["total_emplois"]), int(data1["total_chomeurs"]), int(data1["P20_LOG"])]
+    val2 = [int(data2["p21_pop"]), int(data2["total_emplois"]), int(data2["total_chomeurs"]), int(data2["P20_LOG"])]
+    txt1 = [f"{v:,}".replace(",", " ") for v in val1]
+    txt2 = [f"{v:,}".replace(",", " ") for v in val2]
 
+    fig = go.Figure(data=[
+        go.Bar(name=ville1, x=indicateurs, y=val1, text=txt1, textposition='auto', marker_color='royalblue'),
+        go.Bar(name=ville2, x=indicateurs, y=val2, text=txt2, textposition='auto', marker_color='tomato')
+    ])
+    fig.update_layout(barmode='group', template='plotly_white')
+    st.plotly_chart(fig)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"### 📌 {ville1}")
+        st.write(f"Taux de chômage : {data1['total_chomeurs'] / data1['total_actifs'] * 100:.1f} %")
+        st.write(f"Logements vacants : {data1['P20_LOGVAC'] / data1['P20_LOG'] * 100:.1f} %")
+        st.write(f"Propriétaires : {data1['P20_RP_PROP'] / data1['P20_RP'] * 100:.1f} %")
+        st.write(f"Emplois pour 100 habitants : {data1['total_emplois'] / data1['p21_pop'] * 100:.1f}")
+        st.markdown(f"[🔎 Voir sur Wikipédia]({data1['wikipedia_url']})")
+
+    with col2:
+        st.markdown(f"### 📌 {ville2}")
+        st.write(f"Taux de chômage : {data2['total_chomeurs'] / data2['total_actifs'] * 100:.1f} %")
+        st.write(f"Logements vacants : {data2['P20_LOGVAC'] / data2['P20_LOG'] * 100:.1f} %")
+        st.write(f"Propriétaires : {data2['P20_RP_PROP'] / data2['P20_RP'] * 100:.1f} %")
+        st.write(f"Emplois pour 100 habitants : {data2['total_emplois'] / data2['p21_pop'] * 100:.1f}")
+        st.markdown(f"[🔎 Voir sur Wikipédia]({data2['wikipedia_url']})")
+
+# === PAGE : CARTE ===
+elif page == "🗺️ Carte interactive":
+    st.title("🗺️ Carte interactive des villes de plus de 20 000 habitants")
+    indicateur = st.selectbox("Indicateur à visualiser", ["p21_pop", "total_emplois", "total_chomeurs", "P20_LOG"],
+                              format_func=lambda x: {
+                                  "p21_pop": "Population 2021",
+                                  "total_emplois": "Nombre d'emplois",
+                                  "total_chomeurs": "Nombre de chômeurs",
+                                  "P20_LOG": "Nombre de logements"
+                              }[x])
+
+    df_map = df.copy()
+    df_map["Valeur sélectionnée"] = df_map[indicateur].fillna(0).astype(int)
+    df_map["Valeur sélectionnée"] = df_map["Valeur sélectionnée"].apply(lambda x: x if x > 0 else 1)
+    df_map["Valeur"] = df_map["Valeur sélectionnée"].apply(lambda x: f"{x:,}".replace(",", " "))
+    df_map["color"] = df_map["ville_regroupee"].apply(
+        lambda x: "red" if x == ville1 else "blue" if x == ville2 else "#888")
+
+    fig = px.scatter_mapbox(
+        df_map, lat="lat", lon="lon", size="Valeur sélectionnée", color="color",
+        hover_name="ville_regroupee",
+        hover_data={"Valeur": True, "lat": False, "lon": False, "color": False},
+        size_max=40, zoom=4.5, height=600
+    )
+    fig.update_layout(mapbox_style="open-street-map", showlegend=False,
+                      margin={"r": 0, "t": 0, "l": 0, "b": 0})
+    st.plotly_chart(fig, use_container_width=True)
+
+# === PAGE : MÉTÉO ===
+elif page == "🌤️ Météo":
+    st.title("🌤️ Météo & prévisions")
+
+    API_KEY = "f146d243be7e411789390746251004"
+    BASE_URL = "http://api.weatherapi.com/v1"
+
+    def get_current_weather(ville):
+        url = f"{BASE_URL}/current.json?key={API_KEY}&q={ville}&lang=fr"
+        try:
+            r = requests.get(url)
+            d = r.json()
+            if "current" not in d:
+                return {"error": "Données indisponibles"}
+            return {
+                "temp": d["current"]["temp_c"],
+                "condition": d["current"]["condition"]["text"],
+                "humidity": d["current"]["humidity"],
+                "wind_kph": d["current"]["wind_kph"],
+                "icon": d["current"]["condition"]["icon"]
+            }
+        except:
+            return {"error": "Erreur API"}
+
+    def get_forecast(ville, days):
+        url = f"{BASE_URL}/forecast.json?key={API_KEY}&q={ville}&days={days}&lang=fr"
+        try:
+            r = requests.get(url)
+            d = r.json()
+            return d.get("forecast", {}).get("forecastday", [])
+        except:
+            return []
+
+    col_m1, col_m2 = st.columns(2)
+    for col, ville, meteo in zip([col_m1, col_m2], [ville1, ville2],
+                                  [get_current_weather(ville1), get_current_weather(ville2)]):
+        with col:
+            st.markdown(f"### {ville}")
+            if "error" in meteo:
+                st.error(meteo["error"])
+            else:
+                st.image("http:" + meteo["icon"], width=60)
+                st.write(meteo["condition"])
+                st.write(f"Température : {meteo['temp']}°C")
+                st.write(f"Humidité : {meteo['humidity']}%")
+                st.write(f"Vent : {meteo['wind_kph']} km/h")
+
+    nb_jours = st.slider("Choisissez le nombre de jours de prévisions", min_value=1, max_value=7, value=3)
+
+    st.subheader("📅 Prévisions météo")
+    col_f1, col_f2 = st.columns(2)
+    for col, ville, prev in zip([col_f1, col_f2], [ville1, ville2],
+                                 [get_forecast(ville1, nb_jours), get_forecast(ville2, nb_jours)]):
+        with col:
+            st.markdown(f"#### {ville}")
+            if not prev:
+                st.write("❌ Données non disponibles")
+            else:
+                for day in prev:
+                    st.image("http:" + day["day"]["condition"]["icon"], width=40)
+                    st.write(f"**{day['date']}** – {day['day']['condition']['text']}")
+                    st.write(f"Min : {day['day']['mintemp_c']}°C | Max : {day['day']['maxtemp_c']}°C")
+
+# === PAGE : SPORT ===
+elif page == "🏃 Offre sportive":
+    st.title("🏃 Analyse de l'offre sportive")
+
+    def regrouper_arrondissements(nom):
+        if isinstance(nom, str):
+            if "Paris" in nom:
+                return "Paris"
+            elif "Lyon" in nom:
+                return "Lyon"
+            elif "Marseille" in nom:
+                return "Marseille"
+            else:
+                return nom.strip()
+        return nom
+
+    categories_sport = {
+        "Sports collectifs": [
+            "Terrain de football", "Terrain de basket-ball", "Terrain de handball", "Terrain de rugby", "Salle de volley-ball"
+        ],
+        "Raquettes": [
+            "Court de tennis", "Salle ou terrain de badminton", "Salle ou terrain de squash", "Salle de tennis de table"
+        ],
+        "Urbains / libres": [
+            "Skatepark", "Multisports/City-stades", "Aire de fitness/street workout", "Parkour/blocpark"
+        ],
+        "Piscines / natation": [
+            "Bassin sportif de natation", "Bassin ludique de natation", "Piscine", "Fosse à plongeon"
+        ],
+        "Gymnases / multisports": [
+            "Salle multisports (gymnase)", "Dojo / Salle d'arts martiaux", "Salle de danse", "Salle de musculation/cardiotraining"
+        ]
+    }
+
+    emojis_categorie = {
+        "Sports collectifs": "⚽",
+        "Raquettes": "🎾",
+        "Urbains / libres": "🛹",
+        "Piscines / natation": "🏊‍♂️",
+        "Gymnases / multisports": "🏟️"
+    }
+
+    df_sport = pd.read_csv("data-es.csv", sep=None, engine="python")
+    df_sport.rename(columns={"Commune INSEE": "codgeo"}, inplace=True)
+    df_sport["codgeo"] = df_sport["codgeo"].astype(str)
+    df_sport["ville_regroupee"] = df_sport["Commune Nom"].apply(regrouper_arrondissements)
+
+    categorie_choisie = st.selectbox("Choisissez une catégorie à comparer", list(categories_sport.keys()))
+    emoji = emojis_categorie.get(categorie_choisie, "🏅")
+    activites = categories_sport[categorie_choisie]
+    df_filtres = df_sport[df_sport["Type d'équipement sportif"].isin(activites)]
+
+    sport_ville1 = df_filtres[df_filtres["ville_regroupee"] == ville1]
+    sport_ville2 = df_filtres[df_filtres["ville_regroupee"] == ville2]
+
+    top1 = sport_ville1["Type d'équipement sportif"].value_counts().head(5)
+    top2 = sport_ville2["Type d'équipement sportif"].value_counts().head(5)
+
+    col_s1, col_s2 = st.columns(2)
+    with col_s1:
+        st.markdown(f"### {emoji} {ville1}")
+        if top1.empty:
+            st.write("Aucun équipement trouvé.")
+        else:
+            for i, (e, n) in enumerate(top1.items(), 1):
+                st.write(f"{i}. **{e}** – {n} équipements")
+
+    with col_s2:
+        st.markdown(f"### {emoji} {ville2}")
+        if top2.empty:
+            st.write("Aucun équipement trouvé.")
+        else:
+            for i, (e, n) in enumerate(top2.items(), 1):
+                st.write(f"{i}. **{e}** – {n} équipements")
+
+# === PAGE : À PROPOS ===
+elif page == "ℹ️ À propos":
+    st.title("ℹ️ À propos de City Fighting")
+    st.markdown("""
+    Cette application a été développée dans le cadre du projet **SAE Outils Décisionnels**.  
+    Elle permet de comparer les grandes villes françaises selon :
+    - Données générales (population, emploi, logement)
+    - Indicateurs météo
+    - Présence d’équipements sportifs
+    - Carte interactive
+
+    **Sources de données** :
+    - INSEE (population, emploi, logement)
+    - Data ES (équipements sportifs)
+    - WeatherAPI (météo)
+
+    Développé par : *Mehdi Boussedra et Clement Tang*  
+    BUT3 SD VCOD groupe 33
+    """)
