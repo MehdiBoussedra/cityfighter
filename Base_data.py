@@ -6,7 +6,8 @@ import os
 fichiers_drive = {
     "base-cc-emploi-pop-active-2020_v2.CSV": "1ZSzHZwxcsoDn4VxyjsPbj7K0zmoJYPdL",
     "base-cc-logement-2020.CSV": "1LU57jvjNQSOGwnGM6_cNbENVYez1FKzP",
-    "data-es.csv": "1nn1TT2_2hNXLyDFOlA7StDYLOR0UE3NN"
+    "data-es.csv": "1nn1TT2_2hNXLyDFOlA7StDYLOR0UE3NN",
+    "base-des-lieux-et-des-equipements-culturels.csv":"1SAGJ_bxmCx4G4FdwD3hcXlQNwYaHC_OM"
 }
 
 for nom_fichier, file_id in fichiers_drive.items():
@@ -155,6 +156,64 @@ categories_sport = {
     ]
 }
 
+# === 9. CULTURE : Chargement de la base des lieux et équipements culturels ===
+df_culture = pd.read_csv("base-des-lieux-et-des-equipements-culturels.csv", sep=";", encoding="utf-8", low_memory=False)
+
+# Corrige les noms des colonnes si besoin (selon ta base)
+df_culture.rename(columns={"code_insee": "codgeo"}, inplace=True)
+df_culture["codgeo"] = df_culture["codgeo"].astype(str)
+
+# 💡 Fonction de regroupement des arrondissements (identique à ton code)
+def regrouper_arrondissements(nom):
+    if isinstance(nom, str):
+        if "Paris" in nom:
+            return "Paris"
+        elif "Lyon" in nom:
+            return "Lyon"
+        elif "Marseille" in nom:
+            return "Marseille"
+        else:
+            return nom.strip()
+    return nom
+
+# Appliquer la fonction pour créer la colonne 'ville_regroupee' dans les données culturelles
+df_culture["ville_regroupee"] = df_culture["libelle_geographique"].apply(regrouper_arrondissements)
+
+# === 9.1. Définition des catégories culturelles ===
+categories_culture = {
+    "Musées": ["Musée", "Muséum"],
+    "Bibliothèques": ["Bibliothèque"],
+    "Cinémas": ["Cinéma"],
+    "Salles de spectacles": ["Salle de spectacles", "Théâtre", "Opéra", "Salle de concert"],
+    "Patrimoine / Monuments": ["Site patrimonial", "Monument", "Château", "Abbaye", "Cathédrale", "Église"]
+}
+
+# === 9.2. Comptage des équipements par catégorie, AVEC regroupement des arrondissements ===
+df_culture_grouped = pd.DataFrame()
+df_culture_grouped["ville_regroupee"] = df_culture["ville_regroupee"].unique()
+
+for cat_name, keywords in categories_culture.items():
+    df_cat = df_culture[df_culture["Type équipement ou lieu"].apply(lambda x: any(kw in str(x) for kw in keywords))]
+    df_count = df_cat.groupby("ville_regroupee").size().reset_index(name=f"nb_{cat_name.lower().replace(' ', '_').replace('/', '_')}")
+    df_culture_grouped = df_culture_grouped.merge(df_count, on="ville_regroupee", how="left")
+
+# Remplacer les NaN par 0
+df_culture_grouped.fillna(0, inplace=True)
+df_culture_grouped[df_culture_grouped.columns[1:]] = df_culture_grouped[df_culture_grouped.columns[1:]].astype(int)
+
+# ➕ Calcul du total des équipements culturels toutes catégories confondues
+cols_culture = [col for col in df_culture_grouped.columns if col != "ville_regroupee"]
+df_culture_grouped["nb_equipements_culturels"] = df_culture_grouped[cols_culture].sum(axis=1)
+
+# === 9.3. Fusion avec la base principale sur 'ville_regroupee' ===
+df_regroupe = df_regroupe.merge(df_culture_grouped, on="ville_regroupee", how="left")
+
+# Remplacer les NaN restants par 0
+df_regroupe[cols_culture + ["nb_equipements_culturels"]] = df_regroupe[cols_culture + ["nb_equipements_culturels"]].fillna(0).astype(int)
+
+
+print("✅ Données culturelles par catégorie et total intégrées avec succès.")
+
 # === 3. Calcul du nombre d’équipements par catégorie et par ville ===
 
 # Initialisation d’un DataFrame regroupé
@@ -186,6 +245,8 @@ df_regroupe[cols_sport] = df_regroupe[cols_sport].fillna(0).astype(int)
 # === 5. Sauvegarde de la base enrichie
 df_regroupe.to_excel("Villes_regroupees_population_wiki_sport.xlsx", index=False)
 
+print("✅ Données culturelles par catégorie intégrées avec succès dans Villes_regroupees_population_wiki_sport.xlsx.")
+
 print("✅ Données sportives par catégorie intégrées avec succès.")
 
 # === 8. DEBUG CHECKS ===
@@ -193,4 +254,3 @@ print("✅ Colonnes population :", df_regroupe.columns.tolist())
 print("✅ Coordonnées manquantes :", df_regroupe[df_regroupe["lat"].isna()])
 print("✅ Colonnes emploi :", df_emploi_grouped.columns.tolist())
 print("✅ Colonnes logement :", df_logement_grouped.columns.tolist())
-

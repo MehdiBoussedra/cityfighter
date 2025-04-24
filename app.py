@@ -15,6 +15,7 @@ page = st.sidebar.radio("Aller à :", [
     "🗺️ Carte interactive",
     "🌤️ Météo",
     "🏃 Offre sportive",
+    "🎨 Données culturelles",
     "ℹ️ À propos"
 ])
 
@@ -252,6 +253,51 @@ elif page == "🏃 Offre sportive":
             for i, (e, n) in enumerate(top2.items(), 1):
                 st.write(f"{i}. **{e}** – {n} équipements")
 
+# === PAGE : CULTURE ===
+elif page == "🎨 Données culturelles":
+    st.title("🎨 Analyse de l'offre culturelle")
+
+    categories_culture = {
+        "nb_musées": "Musées",
+        "nb_bibliothèques": "Bibliothèques",
+        "nb_cinémas": "Cinémas",
+        "nb_salles_de_spectacles": "Salles de spectacles",
+        "nb_patrimoine___monuments": "Patrimoine / Monuments"
+    }
+
+    st.subheader(f"🏛️ {ville1} vs {ville2} - Équipements culturels")
+
+    total1 = int(data1["nb_equipements_culturels"])
+    total2 = int(data2["nb_equipements_culturels"])
+
+    st.markdown(f"### 🎯 Nombre total d'équipements culturels")
+    st.write(f"**{ville1}** : {total1} équipements")
+    st.write(f"**{ville2}** : {total2} équipements")
+
+    labels = list(categories_culture.values())
+    values1 = [int(data1[col]) for col in categories_culture.keys()]
+    values2 = [int(data2[col]) for col in categories_culture.keys()]
+    txt1 = [str(v) for v in values1]
+    txt2 = [str(v) for v in values2]
+
+    fig = go.Figure(data=[
+        go.Bar(name=ville1, x=labels, y=values1, text=txt1, textposition='auto', marker_color='royalblue'),
+        go.Bar(name=ville2, x=labels, y=values2, text=txt2, textposition='auto', marker_color='tomato')
+    ])
+    fig.update_layout(barmode='group', template='plotly_white')
+    st.plotly_chart(fig)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"### 🖼️ Détail pour {ville1}")
+        for key, label in categories_culture.items():
+            st.write(f"{label} : {int(data1[key])} équipements")
+
+    with col2:
+        st.markdown(f"### 🖼️ Détail pour {ville2}")
+        for key, label in categories_culture.items():
+            st.write(f"{label} : {int(data2[key])} équipements")
+
 # === PAGE : À PROPOS ===
 elif page == "ℹ️ À propos":
     st.title("ℹ️ À propos de City Fighting")
@@ -268,6 +314,9 @@ elif page == "ℹ️ À propos":
     - Data ES (équipements sportifs)
     - WeatherAPI (météo)
 
-    Développé par : *Mehdi Boussedra et Clement Tang*  
+    **Développé par :**  
+    - [Mehdi Boussedra](https://www.linkedin.com/in/mehdi-boussedra-203127258/)  
+    - [Clément Tang](https://www.linkedin.com/in/clementtang-in/)
+
     BUT3 SD VCOD groupe 33
     """)
