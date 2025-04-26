@@ -48,7 +48,7 @@ Lien Github :
 https://github.com/MehdiBoussedra/cityfighter.git
 
 Lien de l’application :
-https://cityfighter.streamlit.app/ 
+https://cityfighter.streamlit.app/
 
 
 Fait par : Mehdi Boussedra et Clément Tang
