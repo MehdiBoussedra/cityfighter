@@ -64,7 +64,7 @@ if page == "🏠 Accueil":
     st.markdown("""
         **City Fighting** est une application de comparaison entre les grandes villes françaises (plus de 20 000 habitants).  
         Elle vous permet de :
-        - Comparer deux villes selon leur population, emploi, logement, équipements sportifs.
+        - Comparer deux villes selon leur population, emploi, logement, équipements sportifs, infrastructures culturelles.
         - Visualiser ces villes sur une carte interactive.
         - Accéder à la météo en temps réel et aux prévisions.
 
@@ -181,7 +181,7 @@ elif page == "🌤️ Météo":
                 st.write(f"Humidité : {meteo['humidity']}%")
                 st.write(f"Vent : {meteo['wind_kph']} km/h")
 
-    nb_jours = st.slider("Choisissez le nombre de jours de prévisions", min_value=1, max_value=7, value=3)
+    nb_jours = st.slider("Choisissez le nombre de jours de prévisions", min_value=1, max_value=3, value=2)
 
     st.subheader("📅 Prévisions météo")
     col_f1, col_f2 = st.columns(2)
@@ -326,10 +326,12 @@ elif page == "ℹ️ À propos":
     - Données générales (population, emploi, logement)
     - Indicateurs météo
     - Présence d’équipements sportifs
+    - Présence d’infrastructures culturelles
     - Carte interactive
 
     **Sources de données** :
     - INSEE (population, emploi, logement)
+    - Data Gouv (lecture des coordonnées, donnée culturelle)
     - Data ES (équipements sportifs)
     - WeatherAPI (météo)
 
