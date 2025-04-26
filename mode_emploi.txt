@@ -8,7 +8,7 @@ Si vous utilisez Visual Studio Code :
         - Sous Windows : venv\Scripts\activate
         - Sous Mac/Linux : source venv/bin/activate
 
-- Installer les bibliothèques nécessaires : streamlit, pandas, plotly, openpyxl, requests
+- Installer les bibliothèques nécessaires : streamlit, pandas, plotly, openpyxl, requests, gdown, os
 
 Commande: pip install -r requirements.txt
 
@@ -24,6 +24,7 @@ Fichiers de données nécessaires :
     - base-cc-emploi-pop-active-2020_v2.CSV
     - 20230823-communes-departement-region.csv
     - data-es.csv
+    - base-des-lieux-et-des-equipements-culturels.csv
 
 Étapes d'exécution :
 1. Lancer Base_data.py pour générer les fichiers de données traitées :
@@ -40,7 +41,15 @@ Navigation :
 - Carte interactive : taille et localisation des villes
 - Météo : température, humidité, prévisions à 3 jours
 - Offre sportive : top équipements par catégorie avec emoji dynamique
+- Données culturelles : nombres de musées, bibliothèques, cinémas, monuments...
 - À propos : informations sur le projet
+
+Lien Github :
+https://github.com/MehdiBoussedra/cityfighter.git
+
+Lien de l’application :
+https://cityfighter.streamlit.app/ 
+
 
 Fait par : Mehdi Boussedra et Clément Tang
 BUT3 SD VCOD groupe 33
