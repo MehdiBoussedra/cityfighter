@@ -4,9 +4,9 @@ import os
 
 # === 1. Télécharger les fichiers Google Drive dans le dossier actuel ===
 fichiers_drive = {
-    "base-cc-emploi-pop-active-2020_v2.CSV": "1ZSzHZwxcsoDn4VxyjsPbj7K0zmoJYPdL",
-    "base-cc-logement-2020.CSV": "1LU57jvjNQSOGwnGM6_cNbENVYez1FKzP",
-    "data-es.csv": "1nn1TT2_2hNXLyDFOlA7StDYLOR0UE3NN",
+    "base-cc-emploi-pop-active-2020_v2.CSV": "1hX49togkrfSEMSQ6Ge9bDjdn8cKc7mkQ",
+    "base-cc-logement-2020.CSV": "1hntwnIsFbJspS0ZIeept3YuJ3b-FUaPa",
+    "data-es.csv": "1oIdrNoVuYxeC2VA3xeY6L3zYMJSP60M-",
     "base-des-lieux-et-des-equipements-culturels.csv":"1SAGJ_bxmCx4G4FdwD3hcXlQNwYaHC_OM"
 }
 
@@ -253,4 +253,5 @@ print("✅ Données sportives par catégorie intégrées avec succès.")
 print("✅ Colonnes population :", df_regroupe.columns.tolist())
 print("✅ Coordonnées manquantes :", df_regroupe[df_regroupe["lat"].isna()])
 print("✅ Colonnes emploi :", df_emploi_grouped.columns.tolist())
+
 print("✅ Colonnes logement :", df_logement_grouped.columns.tolist())
