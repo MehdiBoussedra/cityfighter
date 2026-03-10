@@ -6,8 +6,8 @@ import os
 fichiers_drive = {
     "base-cc-emploi-pop-active-2020_v2.CSV": "1hX49togkrfSEMSQ6Ge9bDjdn8cKc7mkQ",
     "base-cc-logement-2020.CSV": "1hntwnIsFbJspS0ZIeept3YuJ3b-FUaPa",
-    "data-es.csv": "1oIdrNoVuYxeC2VA3xeY6L3zYMJSP60M-",
-    "base-des-lieux-et-des-equipements-culturels.csv":"1SAGJ_bxmCx4G4FdwD3hcXlQNwYaHC_OM"
+    "data-es.csv": "1wTcGJIlcgDvndJTzKcavfqWdgx-WoZEM",
+    "base-des-lieux-et-des-equipements-culturels.csv":"1oIdrNoVuYxeC2VA3xeY6L3zYMJSP60M-"
 }
 
 for nom_fichier, file_id in fichiers_drive.items():
@@ -255,3 +255,4 @@ print("✅ Coordonnées manquantes :", df_regroupe[df_regroupe["lat"].isna()])
 print("✅ Colonnes emploi :", df_emploi_grouped.columns.tolist())
 
 print("✅ Colonnes logement :", df_logement_grouped.columns.tolist())
+
